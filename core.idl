@@ -1,0 +1,42 @@
+type TransportServer
+type ProspectiveRoute
+
+exception GeneralFailure ()
+exception UnknownMessageID (messageID: MessageID)
+exception UnknownTransverseID (transverseID: TransverseID)
+exception UnknownReference (reference: Reference)
+
+class OpenTransport {
+	accept (TransportServer, TransverseID)
+	connect (URI, TransverseID)
+}
+
+class OpenRoute {
+	supplyEndpointBus (BusID) -> (RouteToken)
+	completeRoute (RouteToken, ConnectionID) -> ()
+	getConnectionID () -> (ConnectionID)
+}
+
+class ServiceOffering {
+	request () -> (OpenRoute)
+}
+
+class BusMaster {
+	getNeonateID () -> (ConnectionID)
+	offer (ServiceOffering, TransverseID) -> ()
+	discover (TransverseID) -> (ProspectiveRoute)
+	connect (OpenRoute, ProspectiveRoute) -> ()
+	requestConnection (OpenTransport, BusID)
+	registerServer (TransportServer, URI) -> ()
+}
+
+service BusClientService {
+	OpenTransport
+	OpenRoute
+	ServiceOffering
+}
+
+service BusMasterService {
+	BusMaster
+	getBusMaster (GetMyConnection) -> (BusMaster)
+}

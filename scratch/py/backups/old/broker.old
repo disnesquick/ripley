@@ -1,0 +1,138 @@
+from shared import *
+
+class Broker:
+	""" This class takes care of object handling for a connection.
+	"""
+	def __init__(self, connection):
+		self.objectToSharedID = {}
+		self.sharedIDToObject = {}
+		self.transverseIDToSharedID = {}
+		self.sharedCount = -1
+		self.connection = connection
+		self.services = []
+
+	##
+	# Code for handling object caching
+	##
+
+	def addService(self, service):
+		self.services.append(service)
+
+	def generateShareID(self):
+		""" Generates an object ID in the form of a byte-string. Object IDs consist of the
+		    gateway tag plus a unique code for the object itself. This allows objects to be
+		    mapped to a particular end-point of the gateway.
+		"""
+		self.sharedCount += 1
+		return self.sharedCount
+
+	def objectToReference(self, obj):
+		""" Obtains a reference identifier for the object. If the object has been shared
+		    previously then the previous reference is returned, otherwise a reference is
+		    generated and marked against the object.
+		"""
+		if isinstance(obj, ProxyObject):
+			return obj.__shared_id__
+	
+		if obj in self.objectToSharedID:
+			binaryID = self.objectToSharedID[obj]
+		else:
+			# This is a new object so generate the reference and store them
+			shareID = self.generateShareID()
+			binaryID = SerialID.integerToBytes(shareID)
+			self.sharedIDToObject[binaryID] = obj
+			self.objectToSharedID[obj] = binaryID
+			
+		return self.connection.__connection_id__, binaryID
+
+	def referenceToObject(self, reference, typ):
+		""" Converts an incoming object reference into a python object. Local objects will
+		    be mapped to their local python object whereas remote objects will be wrapped
+		    in an object proxy.
+		"""
+		connectionID, objectID = reference
+		if connectionID == self.connection.__connection_id__:
+			obj = self.sharedIDToObject[objectID]
+			if not isinstance(obj, typ):
+				raise(ReferenceTypeMismatchError(type(obj), typ))
+		else:
+			try:
+				destination = self.connection.proxyTokens[connectionID]
+			except KeyError:
+				# TODO: long range reference?
+				raise(RouteNotFound(connectionID))
+			obj = typ.getProxyClass()(destination, reference)
+		return obj
+			
+	##
+	# Transcoding functions
+	##
+
+	def serializeObjects(self, objs, objTypes, outStream):
+		""" Serializes a list of objects objs according to the types in the congruent list
+		    objTypes.
+		"""	
+		for obj, typ in zip(objs, objTypes):
+			self.serializeObject(obj, typ, outStream)
+
+	def serializeObject(self, obj, typ, outStream):
+		""" serializes a single object and writes to outStream according to the type typ.
+		"""
+		if issubclass(typ, PassByValue):
+			if issubclass(typ, ComplexPassByValue):
+				typ.serialize(obj, self, outStream)
+			else:
+				typ.serialize(obj, outStream)
+		else:
+			ref = self.objectToReference(obj)
+			ObjectID.serialize(ref, outStream)
+
+	def deserializeObjects(self, objTypes, inStream):
+		""" Deserializes a list of objects defined by objTypes from the inStream.
+		"""
+		return tuple(self.deserializeObject(typ, inStream) for typ in objTypes)
+
+	def deserializeObject(self, typ, inStream):
+		if issubclass(typ, PassByValue):
+			if issubclass(typ, ComplexPassByValue):
+				return typ.deserialize(self, inStream)
+			else:
+				return typ.deserialize(inStream)
+		else:
+			ref = ObjectID.deserialize(inStream)
+			return self.referenceToObject(ref, typ)
+
+	##
+	# Function related to transverse object resolution
+	##
+
+	def addServiceImplementation(self, serviceImp):
+		self.services.append(serviceImp)
+
+	def transverseToReference(self, transverseID):
+		if transverseID in self.transverseIDToSharedID:
+			return self.transverseIDToSharedID[transverseID]
+		for service in self.services:
+			try:
+				obj = service.exposedTransverse[transverseID]
+				ref = self.objectToReference(obj)
+				self.transverseIDToSharedID[transverseID] = ref
+				return ref
+			except KeyError:
+				pass
+		raise(UnknownTransverseIDError(transverseID))
+
+	def transverseToObject(self, transverseID, typ):
+		if transverseID in self.transverseIDToSharedID:
+			return self.transverseIDToSharedID[transverseID]
+		for service in self.services:
+			try:
+				obj = service.exposedTransverse[transverseID]
+				if not isinstance(obj, typ):
+					raise(ReferenceTypeMismatchError(type(obj), typ))
+				return obj
+			except KeyError:
+				pass
+		raise(UnknownTransverseIDError(transverseID))
+
+	

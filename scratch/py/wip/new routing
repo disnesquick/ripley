@@ -1,0 +1,132 @@
+
+
+
+
+class Route:
+	""" A Route object defines a one-directional path from one connection,
+	    through the bus to a corresponding route (which points to this
+	    connection) on a separate connection. This enables reply-paths to work.
+	    The one exception to this rule is the route from any connection to the
+	    bus master. This will always point to the same route, no matter the
+	    source route, and that route does not have a destination and cannot be
+	    used. Hence the master-routes can only be used for notifications using
+	    callByTransverse.
+	"""
+	def __init__(self, connection, transport):
+		self.connection = connection
+		self.transport = transport
+		self.token = transport.registerRoute(self)
+	
+	def setOutput(self, shiboleth, endID):
+		""" Called by the bus object when it has a valid edge object to supply
+		    to this route.  This edge is whatsoever object the bus requires to
+		    handle routing to the destination route.  This function also
+		    supplies the endpointID for the output edge, so that it can be
+		    supplied to the connection. This will be used for setting the 
+		    correct route on proxy objects when remote references are received.
+		"""
+		self.shiboleth = shiboleth
+		self.connection.proxyTokens[endID] = self
+	
+	def getOutputBuffer(self):
+		""" Called by the protocol to get a writeable buffer, which, when
+		    committed, will transfer the package to the correct destination for
+		    this Route.
+		"""
+		return self.transport.openBuffer(self.shiboleth)
+
+
+
+class OpenRouteInterface(TransverseObjectInterface):
+	def supplyTransport(self, transportCode:BuswideID) -> RouteToken:
+		pass
+	
+	def completeRoute(self, remoteRoutingCode:RouteToken,
+	                        remoteID:ConnectionID):
+		pass
+	
+	def getLocalToken(self) -> RouteToken:
+		pass
+	
+	def getConnectionID(self) -> ConnectionID:
+		pass
+
+
+@implements(OpenRouteInterface)
+class OpenRoute:
+	def __init__(self, connection):
+		self.connection = connection
+	
+	def supplyTransport(self, transportCode):
+		bus = self.connection.bus
+		transport = bus.resolveTransport(transportCode)
+		self.route = Route(transport, self.connection)
+		return self.route.token
+	
+	def completeRoute(self, remoteRoutingCode, remoteConnectionID):
+		route = self.route
+		self.route = None
+		route.setOutput(remoteRoutingCode, remoteID)
+	
+	def getLocalToken(self):
+		return self.localToken
+	
+	def getConnectionID(self):
+		return self.connection.connectionID
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class LocalTransport:
+	def awaitClient(self, bus):
+		bus = connectionOrBus
+		connection = bus.masterConnection
+		busMaster = bus.busMaster
+		
+		openMaster = OpenRoute(connection)
+		masterToken = openMaster.supplyTransport(self)
+		masterID = connection.connectionID
+		
+		neonateID = bus.masterService.getNeonateID()
+		
+		remoteToken = self.masterBootstrapIO(neonateID, masterToken, masterID)
+		openMaster.completeRoute(remoteToken, neonateID)
+		self.worker = async(self.ioLoop())
+	
+	def bootstrap(self, clientToken):
+		clientID, masterToken, masterID = self.clientBootstrapIO(clientToken)
+		self.worker = async(self.ioLoop())
+		return self.localCode, masterToken, clientID, masterID
+	
+
+
+
+	def getBootstrapConnection(self, transport):
+		route = Route(None, transport)
+		routeToken = transport.register(route)
+		(transportToken, routeCode,
+		 connectionID, masterID) = transport.bootstrap(routeToken)
+		route.connection = Connection(self, connectionID)
+		openRoute.completeRoute(routeCode, masterID)
+		service = BusMasterService(route)
+		busMaster = service.getBusMaster(None)
+		connection.handleService(busClientService)
+		
+		return route.connection, busMaster
+	
+
+
+

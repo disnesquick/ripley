@@ -1,0 +1,23 @@
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>AngularJS Tutorial</title>
+    <link rel="stylesheet" href="bootstrap.min.css">
+    <script src="angular.min.js"></script>
+    <script src="../deps/rsvp-latest.js"></script>
+    <script src="../build/Ripley-debug.js"></script>
+    <script src="app.js"></script>
+</head>
+<body ng-app="myapp">
+<div>
+  <h2>Calculate</h2>
+
+  <div ng-controller="TodoCtrl">
+    <form>
+        <li>Number 1: <input type="text" ng-model="one">  
+        <li>Number 2: <input type="text" ng-model="two">
+        <li>Total <input type="text" ng-model="total">       
+        {{total}}
+    </form>
+  </div>
+</div>
+</body>

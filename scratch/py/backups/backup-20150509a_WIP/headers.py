@@ -1,0 +1,12 @@
+HEADER_HUP           = b"\x00"
+HEADER_RESOLVE       = b"\x11"
+HEADER_NOTIFY        = b"\x12"
+HEADER_EVAL          = b"\x13"
+HEADER_REPLY         = b"\x14"
+HEADER_MESSAGE_ERROR = b"\x15"
+HEADER_GENERAL_ERROR = b"\x16"
+HEADER_TIME          = b"\x17"
+HEADER_FILTER_IN     = b"\x18"
+HEADER_FILTER_OUT    = b"\x19"
+HEADER_FILTER_ERR    = b"\x1A"
+

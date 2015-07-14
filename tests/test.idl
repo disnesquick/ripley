@@ -1,0 +1,8 @@
+class Test {
+	constructor (Int32)
+	echo (UnicodeString) -> (UnicodeString, Int32)
+}
+
+service EchoService {
+	Test
+}
