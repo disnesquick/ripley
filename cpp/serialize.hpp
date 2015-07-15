@@ -1,7 +1,18 @@
+/**
+ * @file   serialize.hpp
+ * @author Trevor Hinkley
+ * @date   14 July 2015
+ * @brief  Header file for Ripley serialization functions.
+ */
+
+#ifndef RIPLEY_SERIALIZE_HPP
+#define RIPLEY_SERIALIZE_HPP
+
 #include <iostream>
 #include <cstdint>
 #include <vector>
 #include <map>
+#include <memory>
 
 
 
@@ -25,6 +36,10 @@ public:
 	bool operator==(const SerialID& rhs) {
 		return value == rhs.value;
 	}
+	
+	inline operator unsigned int() {
+		return value;
+	}
 protected:
 	unsigned int value;
 	std::vector<uint8_t> repr;
@@ -37,11 +52,16 @@ struct SerialIDCompare {
 };
 
 template <typename ValueType>
-using SerialIDMap = std::map<SerialID, ValueType, SerialIDCompare>;
+using SerialIDMap = std::map<unsigned int, ValueType>;
+
+template <typename ValueType>
+using FullSerialIDMap = std::map<SerialID, ValueType, SerialIDCompare>;
 
 class ConnectionID : public SerialID {
 	using SerialID::SerialID;
 };
+
+
 
 
 class BusID : public ConnectionID {
@@ -64,10 +84,12 @@ public:
 	Reference (ConnectionID& cID, ObjectID& oID) :
 		connectionID(cID), objectID(oID) {};
 	
+	void writeTo(std::ostream& outStream) const;
+	
 	bool operator==(const Reference& rhs) {
 		return connectionID == rhs.connectionID && objectID == rhs.objectID;
 	}
-	std::shared_ptr<ConnectionID> connectionID;
+	ConnectionID& connectionID;
 	ObjectID objectID;
 };
 
@@ -106,11 +128,11 @@ class Route;
  *  have to be single-dispatch 'class' objects just objects that can be
  *  kept locally but referenced remotely.
  */
-class PassByReference {
+class PassByReference : public std::enable_shared_from_this<PassByReference> {
 public:
+	typedef std::shared_ptr<PassByReference> SharedPtr;
 	virtual Reference* getReference() {return nullptr;};
 };
-
 
 /** Base class for proxy objects.
  *  
@@ -132,4 +154,4 @@ private:
 	Reference reference;
 
 };
-
+#endif

@@ -42,7 +42,13 @@ SerialID::SerialID(std::istream& iHandle) :
 	std::copy(buffer, buffer + bufSize, repr.begin());
 }
 
-void SerialID::writeTo(std::ostream& oHandle) const {
+void SerialID::writeTo(std::ostream& outStream) const {
 	std::copy(repr.begin(), repr.end(),
-	          std::ostreambuf_iterator<char>(oHandle));
+	          std::ostreambuf_iterator<char>(outStream));
+}
+
+
+void Reference::writeTo(std::ostream& outStream) const {
+	connectionID.writeTo(outStream);
+	objectID.writeTo(outStream);
 }

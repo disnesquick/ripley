@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <memory>
 #include <string>
 #include "stubs.hpp"
 #include "../serialize.hpp"
@@ -66,41 +67,56 @@ TEST_CASE("SerialID objects can be manipulated", "[SerialID]") {
 	}
 	Route routeStub;
 	ConnectionID cID(0x01);
-	Reference rID1(cID, 0x03);
-	Reference rID2(cID, 0x03);
-	Reference rID3(cID, 0x04);
+	ObjectID oID1(0x03);
+	ObjectID oID2(0x03);
+	ObjectID oID3(0x04);
+	Reference rID1(cID, oID1);
+	Reference rID2(cID, oID2);
+	Reference rID3(cID, oID3);
 	
-	SECTION("ReferenceMap stores and retrieves") {
-		ReferenceMap<int> map;
+	SECTION("Map of objectIDs stores and retrieves") {
+		SerialIDMap<int> map;
 		
-		map[rID1] = 5;
+		map[oID1] = 5;
 		
-		REQUIRE(map.at(rID2) == 5);
-		REQUIRE_THROWS(map.at(rID3));
+		REQUIRE(map.at(oID2) == 5);
+		REQUIRE_THROWS(map.at(oID3));
 	}
 	
 	SECTION("ReferenceMap casting of PassByReference objects") {
-		ReferenceMap<PassByReference*> map;
+		SerialIDMap<PassByReference*> map;
 		
 		TestImplementation1 a;
 		
-		map[rID1] = &a;
+		map[oID1] = &a;
 		
-		REQUIRE_NOTHROW(dynamic_cast<TestInterface1&>(*map.at(rID1)));
-		REQUIRE_THROWS(dynamic_cast<TestInterface2&>(*map.at(rID1)));
+		REQUIRE_NOTHROW(dynamic_cast<TestInterface1&>(*map.at(oID1)));
+		REQUIRE_THROWS(dynamic_cast<TestInterface2&>(*map.at(oID1)));
 	}
 	
+	SECTION("ReferenceMap casting of shared_ptr PassByReference") {
+		SerialIDMap<PassByReference::SharedPtr> map;
+		
+		TestImplementation1* a = new TestImplementation1;
+		
+		map[oID1] = PassByReference::SharedPtr(a);
+		
+		REQUIRE(std::dynamic_pointer_cast<TestInterface2>(map.at(oID1)) == nullptr);
+		REQUIRE(std::dynamic_pointer_cast<TestInterface1>(map.at(oID1)) != nullptr);
+	}
+	
+	
 	SECTION("Differentiation between Proxy and Implementation") {
-		ReferenceMap<PassByReference*> map;
+		SerialIDMap<PassByReference*> map;
 		
 		TestImplementation1 impl;
 		TestProxy1 proxy(routeStub, rID1);
 		
-		map[rID1] = &impl;
-		map[rID3] = &proxy;
+		map[oID1] = &impl;
+		map[oID3] = &proxy;
 		
-		TestInterface1& ifaceI = dynamic_cast<TestInterface1&>(*map.at(rID1));
-		TestInterface1& ifaceP = dynamic_cast<TestInterface1&>(*map.at(rID3));
+		TestInterface1& ifaceI = dynamic_cast<TestInterface1&>(*map.at(oID1));
+		TestInterface1& ifaceP = dynamic_cast<TestInterface1&>(*map.at(oID3));
 		REQUIRE(ifaceI.getReference() == nullptr);
 		REQUIRE(*ifaceP.getReference() == rID1);
 		
