@@ -39,5 +39,15 @@ TEST_CASE("Creation of a Connection", "[Connection]") {
 		
 		REQUIRE_NOTHROW(cxn.serializeObject(*impl, output));
 	}
+
+	SECTION("Deserializing a local object from a connection") {
+		Connection cxn(3);
+		std::ostringstream output;
+		TestImplementation* impl = new TestImplementation;
+		cxn.serializeObject(*impl, output);
+		std::istringstream input(output.str())
+		TestImplementation *test = cxn.deserializeObject(input);
+		require(test == impl);
+	}
 }
 
