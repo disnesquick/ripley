@@ -6,7 +6,6 @@ from unstuck import *
 
 # Local imports
 from ..core_impl import OpenRoute
-from ..bus       import SingleBus
 from .base       import Transport
 
 # Exports
@@ -28,15 +27,15 @@ class BootstrapTransport(Transport):
 		# Create a route to the master connection and supply this transport to
 		# get the routing details.
 		openMaster = OpenRoute(connection)
-		masterToken = openMaster.supplyTransport(self)
+		masterToken = self.getRoutingToken()
 		masterID = connection.connectionID
 		
 		# Create a connection ID for the bootstrapping neonate and then complete
 		# the routing on both sides of the transport.
-		neonateID = bus.masterService.getNeonateID()
+		neonateID = bus.busMaster.getNeonateID()
 		remoteToken = self.masterBootstrapIO(bus.busID, neonateID,
 		                                     masterToken, masterID)
-		openMaster.completeRoute(remoteToken, neonateID)
+		openMaster.bootstrap(self, masterToken, remoteToken, neonateID)
 		
 		# Register the transport on the bus as connecting to the remote bus
 		bus.registerTransport(neonateID, self)
@@ -49,9 +48,3 @@ class BootstrapTransport(Transport):
 		 masterID, remoteBusID) = self.clientBootstrapIO(clientToken)
 		self.engageTransport(remoteBusID)
 		return masterToken, clientID, masterID, remoteBusID
-	
-	@classmethod
-	def bootstrapSingle(cls, *args):
-		bus = SingleBus()
-		transport = cls.oneStepConnect(*args)
-		return bus.bootstrapOnTransport(transport)

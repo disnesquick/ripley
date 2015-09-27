@@ -1,4 +1,6 @@
 # Local imports
+from ..connection import Connection
+from ..core_impl import OpenRoute, BusMasterService, busClientService
 from .base import Bus
 
 # Exports
@@ -23,9 +25,9 @@ class SingleBus(Bus):
 		    supplied transport as the Bus's only Transport, sets the master
 		    and returns the Connection for Services to be discovered on.
 		"""
-		(connection, masterService,
-		 remoteBusID              ) = self.getBootstrapConnection(transport)
-		self.masterService = masterService
+		(connection, busMaster,
+		 remoteBusID            ) = self.getBootstrapConnection(transport)
+		self.busMaster = busMaster
 		self.onlyTransport = transport
 		return connection
 	
@@ -42,3 +44,38 @@ class SingleBus(Bus):
 			raise(KeyError("Remote bus was not the right bus. Saw [%s] but"
 			               "it should be [%s]"%(busID, otherID)))
 		return self.onlyTransport
+	
+	##
+	# Code for bootstrapping
+	##
+	
+	def getBootstrapConnection(self, transport):
+		""" Use a BootstrapTransport to create a Connection.
+		
+		    This method is used for a neonate Bus, which is currently unable
+		    to do anything, since it does not have a registered master service.
+		    A new Connection is created, connected to the remote Bus, which must
+		    offer a BusMasterService. This connection is then returned, fully
+		    connected, along with the instantiated BusMasterService.
+		"""
+		# Create a Route and connect it to the supplied transport
+		routeToken = transport.getRoutingToken()
+		
+		# Derive the tokens from the bootstrap protocol
+		(routeCode, connectionID,
+		 masterID, masterBusID  ) = transport.bootstrap(routeToken)
+		
+		# Create the Connection and complete the Route on it
+		connection = Connection(self, connectionID)
+		openRoute = OpenRoute(connection)
+		openRoute.bootstrap(transport, routeToken, routeCode, masterID)
+		route = openRoute.route
+		
+		# Get the BusMaster and register this connection as a BusClient
+		service = BusMasterService(route)
+		busMaster = service.getBusMaster(None)
+		connection.addTransverseMap(busClientService.exposedTransverse)
+		#connection.addTransverseMap(basicErrorService.exposedTransverse)
+		
+		return connection, busMaster, masterBusID
+

@@ -19,7 +19,8 @@ __all__ = ["TransportServer", "OpenRoute", "OpenTransport", "BusMaster",
            "busMasterService", "busClientService", "BusMasterService",
            "BusClientService", "ServiceOffering"]
 
-class TransportServer(core.TransportServer):
+@implements(core.TransportServer)
+class TransportServer:
 	def __init__(self, connectionURI):
 		self.acceptanceTokens = {}
 		self.entryShiboleth = None
@@ -77,9 +78,8 @@ class OpenRoute:
 	    2. A remote Bus.
 	    3. Routing shiboleths from the remote Bus to the remote Connection.
 	"""
-	def __init__(self, connection = None):
-		if connection is not None:
-			self.connection = connection
+	def __init__(self, connection):
+		self.connection = connection
 		self.closed = False
 	
 	def supplyEndpointBus(self, busID):
@@ -90,9 +90,12 @@ class OpenRoute:
 		"""
 		bus = self.connection.bus
 		transport = bus.resolveTransport(busID)
-		return self.supplyTransport(transport)
+		self.transport = transport
+		self.token = transport.getRoutingToken()
+		self.route = Route(self.connection, transport)
+		return self.token
 	
-	def supplyTransport(self, transport):
+	def bootstrap(self, transport, token, remoteShiboleth, remoteConnectionID):
 		""" Directly supply a Transport (used by bootstrap).
 		
 		    The Bus bootstrap protocol will supplies various details across a
@@ -102,15 +105,11 @@ class OpenRoute:
 		    valid instance of using this method.
 		"""
 		if not self.closed:
-			self.route = Route(transport)
-			return self.route.token
+			self.route = Route(self.connection, transport)
+			self.token = token
+			self.completeRoute(remoteShiboleth, remoteConnectionID)
 		else:
 			raise(Exception)
-	
-	def supplyConnection(self, connection):
-		""" Supply the origin Connection on the local Bus.
-		"""
-		self.connection = connection
 	
 	def completeRoute(self, remoteShiboleth, remoteConnectionID):
 		""" Supply the remote routing components beyond the remote Bus.
@@ -121,7 +120,7 @@ class OpenRoute:
 		    beyond the remote Bus, and the remote Connection unique ID.
 		"""
 		if not self.closed:
-			self.route.setOrigin(self.connection)
+			self.route.transport.registerRoute(self.token, self.route)
 			self.route.setDestination(remoteShiboleth, remoteConnectionID)
 			self.closed = True
 		else:
@@ -174,6 +173,9 @@ class BusMaster:
 	def discover(self, name):
 		serviceOffering = self.register[name]
 		token = serviceOffering.request()
+		
+		# Wrap the OpenRoute from the service-offerer so that it appears to the
+		# BusClient as an object originating from this node.
 		return ProspectiveRoute(token)
 	
 	def registerServer(self, server, outCode):

@@ -21,19 +21,8 @@ class PassByReference(metaclass = ABCMeta):
 	"""
 	@staticmethod
 	def getProxyClass():
+		print("BLACK-BOX PROXY")
 		return ObjectProxy
-
-
-class ObjectProxy:
-	""" Base class for proxy objects.
-	    
-	    Proxy objects are bound to a particular route with an identifying
-	    reference, which is uesd to recognition on reception of an incoming
-	    identification.
-	"""
-	def __init__(self, destination, reference):
-		self.destination = destination
-		self.reference = reference
 
 
 class PassByValue:
@@ -54,6 +43,21 @@ class ComplexPassByValue(PassByValue):
 	@classmethod
 	def deserialize(cls, connection, inStream):
 		raise(NotImplementedError(cls))
+
+
+class ObjectProxy:
+	""" Base class for proxy objects.
+	    
+	    Proxy objects are bound to a particular route with an identifying
+	    reference, which is uesd to recognition on reception of an incoming
+	    identification.
+	
+	    destination: 
+	"""
+	def __init__(self, destination, reference):
+		self.destination = destination
+		self.reference = reference
+
 
 
 class Null(PassByValue):

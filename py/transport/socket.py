@@ -67,14 +67,14 @@ class SocketStreamTransport(PacketTransport):
 		yield from self.worker
 	
 	@classmethod
-	def oneStepConnect(cls, address, shiboleth):
-		return await(cls._makeConnect(address, shiboleth))
-	
-	@classmethod
 	def protocolConnect(cls, straddr, shiboleth):
 		addr, port = straddr.split(":")
 		port = int(port)
 		return cls.oneStepConnect((addr,port), shiboleth)
+	
+	@classmethod
+	def oneStepConnect(cls, address, shiboleth):
+		return await(cls._makeConnect(address, shiboleth))
 	
 	@asynchronous
 	@classmethod

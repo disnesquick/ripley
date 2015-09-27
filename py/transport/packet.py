@@ -7,7 +7,7 @@ from unstuck.streams import *
 from unstuck         import *
 
 # Local imports
-from .bootstrap  import *
+from .bootstrap  import BootstrapTransport
 from ..serialize import *
 
 # Exports

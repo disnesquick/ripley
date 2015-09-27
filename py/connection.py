@@ -12,7 +12,7 @@ from unstuck import *
 # Local imports
 from .          import headers
 from .serialize import *
-from .service   import *
+from .interface import ExposedCall
 #from .errors    import *
 from .filter    import *
 
@@ -193,6 +193,8 @@ class Connection:
 			self.modifyIOFilterInput(origin, inStream)
 		elif header == headers.HEADER_FILTER_OUT:
 			self.modifyIOFilterOutput(origin, inStream)
+		elif header == headers.HEADER_RELEASE:
+			self.receiveRelease(origin, inStream)
 		else:
 			raise(DecodingError("Unrecognized header %s"%header))
 	
@@ -250,6 +252,7 @@ class Connection:
 		try:
 			#First argument --must-- be an ExposedCallable object
 			call = self.deserializeObject(inStream, ExposedCall)
+			
 			# Create the response object
 			outStream = origin.getOutputBuffer()
 			outStream.write(headers.HEADER_REPLY)
@@ -273,7 +276,7 @@ class Connection:
 		"""
 		# Find the response callback and call it on the inStream
 		messageID = MessageID.deserialize(inStream)
-		doneCall, _ = self.bus.resolveMessageID(messageID, origin.lastRoute)
+		doneCall, _ = self.bus.resolveMessageID(messageID, origin)
 		doneCall(inStream)
 	
 	def receiveMessageError(self, origin, inStream):
@@ -285,7 +288,7 @@ class Connection:
 		"""
 		# Find the error callback
 		messageID = MessageID.deserialize(inStream)
-		_, error = self.bus.resolveMessageID(messageID, origin.lastRoute)
+		_, error = self.bus.resolveMessageID(messageID, origin)
 		
 		transverseID = TransverseID.deserialize(inStream)
 		try:
@@ -372,7 +375,7 @@ class Connection:
 				fut.setError(e)
 		
 		messageID = self.bus.waitForReply(reply, fut.setError,
-		                                  destination.lastRoute)
+		                                  destination)
 		
 		# Format the outgoing message to the wire
 		outStream = destination.getOutputBuffer()
@@ -403,7 +406,7 @@ class Connection:
 		"""
 		fut = Future()
 		messageID = self.bus.waitForReply(fut.setResult, fut.setError,
-		                                  destination.lastRoute)
+		                                  destination)
 		
 		outStream = destination.getOutputBuffer()
 		outStream.write(headers.HEADER_EVAL)

@@ -1,3 +1,4 @@
+from ripley.service import *
 from ripley.serialize import *
 from ripley.interface import *
 
@@ -190,7 +191,6 @@ class BusMasterProxy(ObjectProxy):
 			return 
 	
 	registerServer = registerServer(b"BusMaster::registerServer")
-	
 
 
 class getBusMasterProxy(EvaluationProxy):
@@ -201,6 +201,21 @@ class getBusMasterProxy(EvaluationProxy):
 	def deserializeReturn(cxn, inStream):
 		ret0 = cxn.deserializeObject(inStream, BusMaster)
 		return ret0
+
+
+class BusClientService(Service):
+	transverseID = b"@a1a86905"
+	@classmethod
+	def getExposed(cls):
+		return exposedOnBusClientService
+
+
+class BusMasterService(Service):
+	transverseID = b"@3225e3be"
+	getBusMaster = getBusMasterProxy(b"::getBusMaster")
+	@classmethod
+	def getExposed(cls):
+		return exposedOnBusMasterService
 
 
 class OpenTransportExposed(ExposedObject):
@@ -336,27 +351,16 @@ class getBusMasterExposed(ExposedCall):
 		cxn.serializeObject(ret0, outStream)
 
 
-from ripley.service import *
-
-class BusClientService(Service):
-	transverseID = b"@a1a86905"
-	@classmethod
-	def getExposed(cls):
-		return {
-			"OpenTransport" : OpenTransportExposed,
-			"OpenRoute" : OpenRouteExposed,
-			"ServiceOffering" : ServiceOfferingExposed
-		}
+exposedOnBusClientService = {
+	"OpenTransport" : OpenTransportExposed,
+	"OpenRoute" : OpenRouteExposed,
+	"ServiceOffering" : ServiceOfferingExposed
+}
 
 
-class BusMasterService(Service):
-	transverseID = b"@3225e3be"
-	getBusMaster = getBusMasterProxy(b"::getBusMaster")
-	@classmethod
-	def getExposed(cls):
-		return {
-			"BusMaster" : BusMasterExposed,
-			"getBusMaster" : getBusMasterExposed
-		}
+exposedOnBusMasterService = {
+	"BusMaster" : BusMasterExposed,
+	"getBusMaster" : getBusMasterExposed
+}
 
 

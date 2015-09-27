@@ -1,0 +1,21 @@
+require core_types
+
+class BusMaster {
+	getNeonateID () -> (ConnectionID)
+	offer (ServiceOffering, TransverseID) -> ()
+	discover (TransverseID) -> (ProspectiveRoute)
+	connect (OpenRoute, ProspectiveRoute) -> ()
+	requestConnection (OpenTransport, BusID)
+	registerServer (TransportServer, URI) -> ()
+}
+
+service BusClientService {
+	OpenTransport
+	OpenRoute
+	ServiceOffering
+}
+
+service BusMasterService {
+	BusMaster
+	getBusMaster (GetMyConnection) -> (BusMaster)
+}

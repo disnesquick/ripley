@@ -6,8 +6,6 @@ from unstuck import *
 
 # Local imports
 from ..serialize import *
-from ..connection import *
-from ..core_impl import *
 #from ..errors import *
 
 # Exports
@@ -105,63 +103,16 @@ class Bus:
 		raise(UnknownMessageIDError(messageID))
 	
 	##
-	# Code for bootstrapping
+	# Error handling
 	##
 	
-	def getBootstrapConnection(self, transport):
-		""" Use a BootstrapTransport to create a Connection.
-		
-		    This method is used for a neonate Bus, which is currently unable
-		    to do anything, since it does not have a registered master service.
-		    A new Connection is created, connected to the remote Bus, which must
-		    offer a BusMasterService. This connection is then returned, fully
-		    connected, along with the instantiated BusMasterService.
-		"""
-		# Create a Route and connect it to the supplied transport
-		openRoute = OpenRoute()
-		routeToken = openRoute.supplyTransport(transport)
-		
-		# Derive the tokens from the bootstrap protocol
-		(routeCode, connectionID,
-		 masterID, masterBusID  ) = transport.bootstrap(routeToken)
-		
-		# Create the Connection and complete the Route on it
-		connection = Connection(self, connectionID)
-		openRoute.supplyConnection(connection)
-		openRoute.completeRoute(routeCode, masterID)
-		route = openRoute.route
-		
-		# Get the BusMaster and register this connection as a BusClient
-		service = BusMasterService(route)
-		busMaster = service.getBusMaster(None)
-		connection.addTransverseMap(busClientService.exposedTransverse)
-		#connection.addTransverseMap(basicErrorService.exposedTransverse)
-		
-		return connection, busMaster, masterBusID
-	
-	def connection(self):
-		""" Return a new Connection on this Bus.
-		
-		    This method creates a new Connection on the current Bus. A unique ID
-		    for the connection is requested from the BusMasterService for this
-		    Bus and is assigned to the new Connection.
-		"""
-		connectionID = self.masterService.getNeonateID()
-		neonate = Connection(self, connectionID)
-		#neonate.addTransverseMap(basicErrorService.exposedTransverse)
-		return neonate
-	
 	def reportDestinationFailure(self, destination):
-		""" A destination is ms-behaving.
+		""" A destination is misbehaving.
 		
 		    This method is used when a destination is shown to be behaving in a
 		    corrupted way. The only option is to cut the Route.
 		"""
 		destination.transport.unregisterRoute(destination)
-	
-	##
-	# Error handling
-	##
 	
 	def handleLocalException(self, destination, err):
 		print(err)

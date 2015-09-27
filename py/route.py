@@ -11,10 +11,9 @@ class Route:
 	    creates a corresponding Route on the other Bus.  A Route is therefore
 	    always created via an OpenRoute object.
 	"""
-	def __init__(self, transport):
+	def __init__(self, connection, transport):
+		self.connection = connection
 		self.transport = transport
-		self.token = transport.registerRoute(self)
-		self.lastRoute = self
 	
 	def setDestination(self, shiboleth, endID):
 		""" Supply details for remote end-point beyond the remote Bus.
@@ -31,16 +30,6 @@ class Route:
 		"""
 		self.shiboleth = shiboleth
 		self.connection.proxyTokens[endID] = self
-	
-	def setOrigin(self, connection):
-		""" Supply details for local end-point beyond the local Bus.
-		
-		    This is (obviously) the mirror function for setDestination. Whereas
-		    the function provides the routing details for reaching a remote
-		    Connection. This function simply provides the object for the actual
-		    local object (Connection). Bonza.
-		"""
-		self.connection = connection
 	
 	def getOutputBuffer(self):
 		""" Called to get a writeable buffer on this Route.

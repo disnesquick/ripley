@@ -26,12 +26,14 @@ class Transport:
 	def __init__(self):
 		self.routeCount = -1
 		self.routeEndpoints = {}
-
-	def registerRoute(self, route):
+	
+	def getRoutingToken(self):
 		self.routeCount += 1
 		token = SerialID.integerToBytes(self.routeCount)
-		self.routeEndpoints[token] = route
 		return token
+	
+	def registerRoute(self, token, route):
+		self.routeEndpoints[token] = route
 	
 	def unregisterRoute(self, route):
 		del self.routeEndpoints[route.token]

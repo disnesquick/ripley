@@ -1,5 +1,5 @@
+from ripley.service import *
 from ripley.serialize import *
-from ripley.interface import *
 
 
 __all__ = [
@@ -335,8 +335,6 @@ class getBusMasterExposed(ExposedCall):
 		ret0 = self.call(arg0)
 		cxn.serializeObject(ret0, outStream)
 
-
-from ripley.service import *
 
 class BusClientService(Service):
 	transverseID = b"@a1a86905"

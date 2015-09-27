@@ -9,8 +9,8 @@ class ObjectCompiler(CPPCompiler):
 		self.parName = name + "&"
 		self.typeName = name
 		self.retName = name
-		self.deserial = "%s = cxn.deserializeObject<%s>(inStream)" % ("%s",name)
-		self.serial = "%s::writeTo(%s, outStream)" % (name, "%s")
+		self.deserial = "%s = %s.deserializeObject(inStream)" % ("%s",name)
+		self.serial = "cxn.serializeObject(%s, outStream)" % ("%s")
 
 
 AbstractCompiler = ExceptionCompiler = ObjectCompiler

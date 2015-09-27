@@ -5,14 +5,14 @@ from collections import deque
 from unstuck import *
 
 # Local imports
-from ..core_impl import *
-from ..transport  import *
-from ..connection import *
-from .base        import *
+from ..core_impl  import OpenTransport, busMasterService
+from ..transport  import LoopbackTransport
+from ..connection import Connection
+from .single      import SingleBus
 
 __all__ = ["FullBus"]
 
-class FullBus(Bus):
+class FullBus(SingleBus):
 	""" A FullBus is a Bus with multiple Transports and Connections.
 	
 	    The primary extension of the FullBus is the inclusion of a transport map
@@ -59,7 +59,7 @@ class FullBus(Bus):
 		"""
 		if not busID in self.transports:
 			request = OpenTransport()
-			self.masterService.requestConnection(request, busID)
+			self.busMaster.requestConnection(request, busID)
 			neonate = request.awaitTransport()
 			self.registerTransport(busID, neonate)
 			neonate.engageTransport(busID)
@@ -68,13 +68,13 @@ class FullBus(Bus):
 	def registerServer(self, server, code = None):
 		""" Register an entry server with the BusMaster.
 		
-		    This is a convenience method to avoid using the masterService
+		    This is a convenience method to avoid using the busMaster
 		    directly. Simply passes TransportServer and URL for the server
 		    through the the BusMasterService call.
 		"""
 		if code is None:
 			code = server.connectionURI
-		self.masterService.registerServer(server, code)
+		self.busMaster.registerServer(server, code)
 	
 	def bootstrapOnTransport(self, transport):
 		""" Connects a neonate Bus to a remote BusMaster through a Transport.
@@ -88,9 +88,9 @@ class FullBus(Bus):
 		    BusMaster bus. The connectionID of the new Connection will be the
 		    BusID for this Bus.
 		"""
-		(connection, masterService,
+		(connection, busMaster,
 		 remoteBusID              ) = self.getBootstrapConnection(transport)
-		self.masterService = masterService
+		self.busMaster = busMaster
 		self.engageBus(connection.connectionID)
 		self.registerTransport(remoteBusID, transport)
 		return connection
@@ -119,9 +119,22 @@ class FullBus(Bus):
 		    BusMaster. In addition, a Connection is created on the BusMaster and
 		    the BusMaster is shared as a service over this Connection.
 		"""
-		self.busMaster = self.masterService = busMaster
+		self.busMaster = busMaster
 		connectionID = busMaster.getNeonateID()
 		self.engageBus(connectionID)
 		connection = Connection(self, connectionID)
 		connection.addTransverseMap(busMasterService.exposedTransverse)
 		return connection
+	
+	def connection(self):
+		""" Return a new Connection on this Bus.
+		
+		    This method creates a new Connection on the current Bus. A unique ID
+		    for the connection is requested from the BusMasterService for this
+		    Bus and is assigned to the new Connection.
+		"""
+		connectionID = self.busMaster.getNeonateID()
+		neonate = Connection(self, connectionID)
+		#neonate.addTransverseMap(basicErrorService.exposedTransverse)
+		return neonate
+	

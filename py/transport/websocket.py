@@ -9,7 +9,7 @@ from unstuck         import *
 # Local imports
 from ..serialize import *
 from ..core_impl import TransportServer, OpenTransport
-from .packet import *
+from .packet import PacketTransport
 
 
 class WebsocketServer(TransportServer):

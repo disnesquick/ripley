@@ -2,9 +2,9 @@ from zlib import crc32
 
 __all__ = ["ParseScope", "BasicType", "ComplexType", "AbstractType",
            "ClassType", "ServiceType", "ExceptionType",
-           "Evaluation", "Notification", "Function"]
+           "Evaluation", "Notification", "Function", "hasConstructor"]
 
-
+"""
 class NameSuffix:
 	def __init__(self, string):
 		self.string = string
@@ -17,14 +17,13 @@ class Override:
 		self.lang = lang
 	def __get__(self, instance, owner):
 		return instance.name + self.string
-
-
+"""
 
 class Type:
 	def __init__(self, name, compiler):
 		self.name = name
 		self.compiler = compiler
-	
+
 
 class BasicType(Type):
 	pass
@@ -140,3 +139,17 @@ class ParseScope:
 	
 	def addParent(self, scope):
 		self.parents.append(scope)
+
+
+def hasConstructor(classdef):
+	""" Little utility function to test whether a class is constructable.
+	
+	    A class with a constructor in the interface can be remotely constructed
+	    which will act as a normal evaluation, returning an instance of the
+	    class in question.
+	"""
+	for method in classdef.methods:
+		if method.name == "constructor":
+			return True
+	else:
+		return False
